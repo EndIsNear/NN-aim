@@ -11,6 +11,16 @@ void Player::draw(SDLWrapper * sdl)
 	sdl->drawTex(m_eye, m_pos + m_dir * static_cast<float>(m_size));
 }
 
+void Player::setNetworkWeights(const std::vector<float>& weights)
+{
+	m_network.setWeights(weights);
+}
+
+Move Player::getMove(bool playerInFov, bool bulletInFov, bool canShoot, float fov) const
+{
+	return m_network.calculateMove(playerInFov, bulletInFov, canShoot, fov);
+}
+
 void Player::move(float speed, const SDL_Rect& area)
 {
 	m_pos += (m_dir * speed);

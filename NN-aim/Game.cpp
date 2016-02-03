@@ -62,6 +62,11 @@ bool Game::end()
 	return m_frameCnt > m_maxGameFrames;
 }
 
+void Game::setNetworkWeights(int player, const std::vector<float>& weights)
+{
+	m_players[player]->setNetworkWeights(weights);
+}
+
 void Game::getNNRating(int& left, int& right)
 {
 	if (m_score[0] > m_score[1])
@@ -157,8 +162,9 @@ void Game::draw()
 }
 
 //players setters
-void Game::makeMove(const int player, const Move& mv)
+void Game::makeMove(const int player)
 {
+	Move mv = m_players[player]->getMove(playerInFov(player), bulletInFov(player), canShoot(player), currentFov(player));
 	if(mv.advanceStraight)
 		move(player);
 	if (mv.shoot)

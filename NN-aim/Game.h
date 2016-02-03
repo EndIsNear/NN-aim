@@ -58,12 +58,16 @@ public:
 	bool end();
 
 	//players are 0 and 1
-	void makeMove(const int player, const Move& mv);
+	void makeMove(const int player);
 	void move(int player);
 	void turnLeft(int player);
 	void turnRight(int player);
 	void changeFov(int player, float mult);
 	void shoot(int player);
+
+	void setNetworkWeights(int player, const std::vector<float>& weights);
+	int getPlayerIndex(int player) const { return m_players[player]->getIndex(); }
+	void setPlayerIndex(int player, int index) { m_players[player]->setIndex(index); }
 
 	bool playerInFov(int player);
 	bool bulletInFov(int player);
