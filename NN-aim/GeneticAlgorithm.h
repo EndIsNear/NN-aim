@@ -1,7 +1,7 @@
 #ifndef GENETIC_ALGORITHM_H
 #define GENETIC_ALGORITHM_H
 
-const int POPULATION_SIZE = 1000;
+const int POPULATION_SIZE = 30;
 
 #include <vector>
 #include <cstdlib>
