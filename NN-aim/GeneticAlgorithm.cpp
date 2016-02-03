@@ -123,7 +123,7 @@ void GeneticAlgorithm::Mutate(size_t index)
 void GeneticAlgorithm::Crossover(size_t parentIndex1, size_t parentIndex2, Chromosome& child1,
 								 Chromosome& child2) const
 {
-	size_t crosspoint1, crosspoint2;
+	int crosspoint1, crosspoint2;
 
 	crosspoint1 = RandomGen::getInstance().intInRange(0, this->chromosomeSize - 1);
 
@@ -148,7 +148,7 @@ void GeneticAlgorithm::Crossover(size_t parentIndex1, size_t parentIndex2, Chrom
 		child2.weights[i] = this->currentGeneration[parentIndex1].weights[i];
 	}
 
-	for(size_t i = crosspoint1; i < this->chromosomeSize; ++i)
+	for(size_t i = crosspoint2; i < this->chromosomeSize; ++i)
 	{
 		child1.weights[i] = this->currentGeneration[parentIndex1].weights[i];
 		child2.weights[i] = this->currentGeneration[parentIndex2].weights[i];
