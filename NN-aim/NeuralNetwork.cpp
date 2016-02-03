@@ -26,9 +26,11 @@ NeuralNetwork::NeuralNetwork(): m_weightsCount(0)
 {
 	m_layers[0] = NeuronLayer(neuronsPerLayer, layer1InputsPerNeuron);
 	m_layers[1] = NeuronLayer(neuronsPerLayer, layer2InputsPerNeuron);
+	m_layers[2] = NeuronLayer(neuronsPerLayer, layer2InputsPerNeuron);
 
 	m_weightsCount += m_layers[0].m_numNeurons * m_layers[0].m_neurons[0].m_inputs;
 	m_weightsCount += m_layers[1].m_numNeurons * m_layers[1].m_neurons[0].m_inputs;
+	m_weightsCount += m_layers[2].m_numNeurons * m_layers[2].m_neurons[0].m_inputs;
 }
 
 float NeuralNetwork::sigmoid(float activation) const
