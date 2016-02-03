@@ -14,69 +14,60 @@
 
 #include <thread>
 
-const int gamesCnt = POPULATION_SIZE / 2;
-
-inline void setFitness(Game * games, GeneticAlgorithm& genAlgo)
+inline void setFitness(std::vector<Game>& games, GeneticAlgorithm& genAlgo)
 {
-	for (int i = 0; i < gamesCnt; ++i)
+	for (int i = 0; i < games.size(); ++i)
 	{
 		int left = 0, right = 0;
 		games[i].getNNRating(left, right);
 		games[i].reset();
-		genAlgo.AddChromosomeFitness(i, left);
-		genAlgo.AddChromosomeFitness(i + gamesCnt, right);
+		genAlgo.AddChromosomeFitness(games[i].getPlayerIndex(0), left);
+		genAlgo.AddChromosomeFitness(games[i].getPlayerIndex(1), right);
 	}
 }
 //makes move on every game
-inline void makeMove(Game * games, NeuralNetwork * nets[2])
+inline void makeMove(std::vector<Game>& games)
 {
-	Move move;
-	for (int i = 0; i < gamesCnt; ++i)
+	for (int i = 0; i < games.size(); ++i)
 	{
 		for (int j = 0; j < 2; ++j)
 		{
-			move = nets[j][i].calculateMove(games[i].playerInFov(j), games[i].bulletInFov(j), games[i].canShoot(j), games[i].currentFov(j));
-			games[i].makeMove(j, move);
+			games[i].makeMove(j);
 			games[i].move();
 		}
 	}
 }
 
-void runRound(Game * games, GeneticAlgorithm& genAlgo, NeuralNetwork * nets[2], SDLWrapper& sdl, bool display, bool shuffle = true)
+void play(int startIndex, GeneticAlgorithm& genAlgo, SDLWrapper& sdl, std::vector<Game>& games)
 {
-	auto& nnVals = genAlgo.GetGeneration();
-	if(shuffle)
-		std::random_shuffle(nnVals.begin(), nnVals.end());
-	else
-		std::sort(nnVals.begin(), nnVals.end());
+	int populationSize = POPULATION_SIZE;
+	int playersCount = populationSize - startIndex;
+	int gamesCount = (playersCount * (playersCount - 1)) / 2;
+	auto& population = genAlgo.GetGeneration();
 
-	//set new NNs
-	for (int i = 0; i < 2; ++i)
+	games.resize(gamesCount);
+
+	int leftPlayerIndex = startIndex;
+	int rightPlayerIndex = leftPlayerIndex;
+	for(int i = 0; i < games.size(); ++i)
 	{
-		for (int j = 0; j < gamesCnt; ++j)
+		++rightPlayerIndex;
+		if(rightPlayerIndex > populationSize - 1)
 		{
-			nets[i][j].setWeights(nnVals[i * gamesCnt + j].weights);
+			++leftPlayerIndex;
+			rightPlayerIndex = leftPlayerIndex + 1;
 		}
+
+		games[i].init(&sdl);
+		games[i].setPlayerIndex(0, leftPlayerIndex);
+		games[i].setPlayerIndex(1, rightPlayerIndex);
+		games[i].setNetworkWeights(0, population[leftPlayerIndex].weights);
+		games[i].setNetworkWeights(1, population[rightPlayerIndex].weights);
 	}
 
-	while (!sdl.quit() && !games[0].end())
+	while(!games[0].end())
 	{
-		sdl.checkForEvent();
-		if (display)
-		{
-			SDL_Delay(1);
-			games[0].draw();
-		}
-		makeMove(games, nets);
-	}
-	setFitness(games, genAlgo);
-}
-
-void runRounds(int iterCnt, Game* games, GeneticAlgorithm& genAlgo, NeuralNetwork * nets[2], SDLWrapper& sdl, bool display)
-{
-	for(int i = 0; i < iterCnt; ++i)
-	{
-		runRound(games, genAlgo, nets, sdl, false);
+		makeMove(games);
 	}
 }
 
@@ -94,9 +85,7 @@ void displayGame(NeuralNetwork nets[2], SDLWrapper& sdl, int framesCount)
 
 		for(int i = 0; i < 2; ++i)
 		{
-			move = nets[i].calculateMove(game.playerInFov(i), game.bulletInFov(i),
-					game.canShoot(i), game.currentFov(i));
-			game.makeMove(i, move);
+			game.makeMove(i);
 			game.move();
 		}
 	}
@@ -111,26 +100,22 @@ int main(int argc, char * argv[])
 		return -1;
 	}
 
-	Game * games = new Game[gamesCnt];
-	for (int i = 0; i < gamesCnt; ++i)
-		games[i].init(&sdl);
-	//RandomGen::explicitSeed(time(NULL));
-
 	GeneticAlgorithm genAlgo(NeuralNetwork().weightsCount());
 	auto& nnVals = genAlgo.GetGeneration();
-
-	NeuralNetwork * nets[2];
-	for (int i = 0; i < 2; ++i)
-		nets[i] = new NeuralNetwork[gamesCnt];
 
 	int iteration = 0;
 	char iterChar[64];
 
 	NeuralNetwork displayGameNets[2];
 
-	int gameIndex = RandomGen::getInstance().intInRange(0, gamesCnt - 1);
-	auto firstBestWeights = nnVals[gameIndex].weights;
-	auto secondBestWeights = nnVals[gamesCnt + gameIndex].weights;
+	int player1Index = RandomGen::getInstance().intInRange(0, POPULATION_SIZE - 1);
+	int player2Index = RandomGen::getInstance().intInRange(0, POPULATION_SIZE - 1);
+	while(player1Index == player2Index)
+	{
+		player2Index = RandomGen::getInstance().intInRange(0, POPULATION_SIZE - 1);
+	}
+	auto firstBestWeights = nnVals[player1Index].weights;
+	auto secondBestWeights = nnVals[player2Index].weights;
 
 	while (!sdl.quit())
 	{
@@ -140,11 +125,13 @@ int main(int argc, char * argv[])
 		displayGameNets[0].setWeights(firstBestWeights);
 		displayGameNets[1].setWeights(secondBestWeights);
 
-		std::thread rounds(runRounds, 20, games, std::ref(genAlgo), nets, std::ref(sdl), false);
+		std::vector<Game> gamesInfo;
+		std::thread game(play, 0, std::ref(genAlgo), std::ref(sdl), std::ref(gamesInfo));
 
 		displayGame(displayGameNets, sdl, 10000);
 
-		rounds.join();
+		game.join();
+		setFitness(gamesInfo, genAlgo);
 
 		std::sort(nnVals.begin(), nnVals.end());
 		firstBestWeights = nnVals[0].weights;
@@ -154,9 +141,5 @@ int main(int argc, char * argv[])
 		iteration++;
 	}
 
-	RandomGen::getInstance().gaussian(1, 1);
-	for (int i = 0; i < 2; ++i)
-		delete[] nets[i];
-	delete[] games;
 	return 0;
 }
