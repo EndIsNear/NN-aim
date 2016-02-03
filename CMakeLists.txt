@@ -10,6 +10,10 @@ add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
 
 if(WIN32)
+	if (MSVC14)
+		target_link_libraries(${PROJECT_NAME} legacy_stdio_definitions.lib)
+	endif()
+
 	target_link_libraries(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/NN-aim/lib/win32/SDL2.lib)
 	target_link_libraries(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/NN-aim/lib/win32/SDL2main.lib)
 else()

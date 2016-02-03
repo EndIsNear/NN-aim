@@ -1,3 +1,8 @@
+#if _MSC_VER >= 1900
+	#include <cstdio>
+	extern "C" { FILE __iob_func[3] = { *stdin, *stdout, *stderr }; }
+#endif
+
 #include <iostream>
 #include <ctime>
 #include <algorithm>
@@ -111,7 +116,7 @@ int main(int argc, char * argv[])
 		games[i].init(&sdl);
 	//RandomGen::explicitSeed(time(NULL));
 
-	GeneticAlgorithm genAlgo(55);
+	GeneticAlgorithm genAlgo(NeuralNetwork().weightsCount());
 	auto& nnVals = genAlgo.GetGeneration();
 
 	NeuralNetwork * nets[2];
